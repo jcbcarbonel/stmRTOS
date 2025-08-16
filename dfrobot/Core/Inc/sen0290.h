@@ -9,10 +9,13 @@
 #define INC_SEN0290_H_
 
 // I2C address
-#define as3935_add1           0x01     ///< A0=high, A1=low
-#define as3935_add2           0x02     ///< A0=low, A1=high
-#define as3935_add3           0x03     ///< A0=high, A1=high
+#define as3935_add1	0x01	///< A0=high, A1=low
+#define as3935_add2	0x02	///< A0=low, A1=high
+#define as3935_add3	0x03	///< A0=high, A1=high
 
+struct {
+
+}sen0290_h;
 
 
 #endif /* INC_SEN0290_H_ */
