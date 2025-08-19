@@ -13,14 +13,20 @@
 
 extern sen0290_t sen0290;
 
+
+
 void Wait_sen0290_Until_Ready(void){
 	HAL_I2C_IsDeviceReady(sen0290.i2c_Handle, Device_Address, 3, HAL_MAX_DELAY);
 }
 
-void Register_Default_Command(void){
+uint8_t Register_Default_Command(void){
 	sen0290.Direct_Command = 0x96;
 	HAL_I2C_Mem_Write(sen0290.i2c_Handle, Device_Address, Preset_Default, sizeof(Preset_Default), &sen0290.Direct_Command,  sizeof(sen0290.Direct_Command), HAL_MAX_DELAY);
 	HAL_I2C_Mem_Write(sen0290.i2c_Handle, Device_Address, Calib_RCO, sizeof(Calib_RCO), &sen0290.Direct_Command,  sizeof(sen0290.Direct_Command), HAL_MAX_DELAY);
+
+	HAL_I2C_Mem_Read(sen0290.i2c_Handle, Device_Address, Preset_Default, sizeof(Preset_Default), &sen0290.Memory_Value, 16, HAL_MAX_DELAY);
+	//uint8_t mem_add = (sen0290.Memory_Value[0]<<8) + sen0290.Memory_Value[1];
+	uint16_t mem_add = sen0290.Memory_Value;
 }
 
 uint8_t Get_Interrupt_Source(void){
@@ -37,7 +43,7 @@ uint8_t Get_Interrupt_Source(void){
 	    return 3;                    // Noise level too high
 	}
 	else{
-	    return 0;
+	    return 5;
 	}                    // interrupt result not expected
 }
 

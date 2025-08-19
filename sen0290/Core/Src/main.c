@@ -22,6 +22,7 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include <string.h>
+#include <stdio.h>
 #include "sen0290.h"
 
 /* USER CODE END Includes */
@@ -73,6 +74,7 @@ int main(void)
 
   /* USER CODE BEGIN 1 */
 	  uint8_t buf[12];
+	  uint8_t irq;
   /* USER CODE END 1 */
 
   /* MCU Configuration--------------------------------------------------------*/
@@ -100,14 +102,22 @@ int main(void)
   HAL_UART_Transmit(&huart2, buf, strlen((char*)buf), HAL_MAX_DELAY);
   HAL_Delay(500);
   Wait_sen0290_Until_Ready();
-  Register_Default_Command();
+  uint16_t hex_val = Register_Default_Command();
+  char hex_buffer[15];
+  // Register_Default_Command();
+  sprintf(hex_buffer, "Hex Value: 0x%x\n", hex_val);
+  HAL_UART_Transmit(&huart2, (uint8_t*)hex_buffer, strlen(hex_buffer), HAL_MAX_DELAY);
+  HAL_Delay(500);
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
+	  irq = Get_Interrupt_Source();
 
+	  HAL_UART_Transmit(&huart2, &irq, 1, HAL_MAX_DELAY);
+	  HAL_Delay(500);
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */

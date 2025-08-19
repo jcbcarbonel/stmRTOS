@@ -23,6 +23,7 @@ static const uint8_t Interrupt_Address = 0x03;
 typedef struct{
 	I2C_HandleTypeDef *i2c_Handle;
 	uint8_t* Interrupt_Source;
+	uint16_t* Memory_Value;
 	uint8_t Direct_Command;
 }sen0290_t;
 
@@ -30,7 +31,7 @@ typedef struct{
 
 void Wait_sen0290_Until_Ready(void);
 
-void Register_Default_Command(void);
+uint8_t Register_Default_Command(void);
 
 uint8_t  Get_Interrupt_Source(void);
 
