@@ -98,6 +98,7 @@ int main(void)
   MX_I2C1_Init();
   /* USER CODE BEGIN 2 */
   Assign_SEN0290_I2C_Handler(&hi2c1);
+  Assign_SEN0290_UART_Handler(&huart2);
   Wait_SEN0290_Until_Ready();
   ret_val = Register_Default_Command();
 
@@ -125,19 +126,19 @@ int main(void)
 		  HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, 1);
 		  HAL_Delay(100);
 
-		  sprintf((char *)buf, "Interrupt Rising: %d\r\n", i);
+		  sprintf((char *)buf, "Index: %d\r\n", i);
 		  HAL_UART_Transmit(&huart2, buf, strlen((char *)buf), HAL_MAX_DELAY);
 		  HAL_Delay(100);
 
-		  ret_val = Read_SEN0290_Interrupt_Source();
-		  sprintf((char *)buf, "Interrupt Source: %d\r\n", ret_val);
-		  HAL_UART_Transmit(&huart2, buf, strlen((char *)buf), HAL_MAX_DELAY);
+
+//
+//		  HAL_UART_Transmit(&huart2, buf, strlen((char *)buf), HAL_MAX_DELAY);
+//
 		  HAL_Delay(100);
-
-		  Interpret_SEN0290_Interrupt(ret_val);
-
+		  Interpret_SEN0290_Interrupt();
+		  HAL_Delay(100);
 		  ret_val = Read_SEN0290_Distance_Register();
-		  sprintf((char *)buf, "Lightning Distance: %d kilometers\r\n", ret_val);
+		  sprintf((char *)buf, "Lightning Distance: %d kilometers\r\n\n", ret_val);
 		  HAL_UART_Transmit(&huart2, buf, strlen((char *)buf), HAL_MAX_DELAY);
 		  HAL_Delay(100);
 

@@ -29,10 +29,11 @@ typedef struct
 }SEN0290_t;
 
 void Assign_SEN0290_I2C_Handler(I2C_HandleTypeDef *hi2c);
+void Assign_SEN0290_UART_Handler(UART_HandleTypeDef *hUART);
 uint8_t Wait_SEN0290_Until_Ready(void);
 uint8_t Register_Default_Command(void);
 uint8_t Read_SEN0290_Distance_Register(void);
 uint8_t Read_SEN0290_Interrupt_Source(void);
-uint8_t Interpret_SEN0290_Interrupt(uint8_t irq);
+uint8_t Interpret_SEN0290_Interrupt(void);
 
 #endif /* INC_SEN0290_H_ */
