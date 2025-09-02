@@ -21,10 +21,9 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-#include <string.h>
+#include "SEN0290.h"
 #include <stdio.h>
-#include "sen0290.h"
-
+#include <string.h>
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -48,7 +47,7 @@ I2C_HandleTypeDef hi2c1;
 UART_HandleTypeDef huart2;
 
 /* USER CODE BEGIN PV */
-sen0290_t sen0290;
+uint8_t Blue_Button = 0;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -62,7 +61,7 @@ static void MX_I2C1_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-
+SEN0290_t SEN0290;
 /* USER CODE END 0 */
 
 /**
@@ -73,8 +72,8 @@ int main(void)
 {
 
   /* USER CODE BEGIN 1 */
-	  uint8_t buf[12];
-	  uint8_t irq;
+	uint8_t ret_val;
+	uint8_t buf[40];
   /* USER CODE END 1 */
 
   /* MCU Configuration--------------------------------------------------------*/
@@ -98,26 +97,57 @@ int main(void)
   MX_USART2_UART_Init();
   MX_I2C1_Init();
   /* USER CODE BEGIN 2 */
-  strcpy((char*)buf, "Hello!\r\n");
-  HAL_UART_Transmit(&huart2, buf, strlen((char*)buf), HAL_MAX_DELAY);
-  HAL_Delay(500);
-  Wait_sen0290_Until_Ready();
-  uint16_t hex_val = Register_Default_Command();
-  char hex_buffer[15];
-  // Register_Default_Command();
-  sprintf(hex_buffer, "Hex Value: 0x%x\n", hex_val);
-  HAL_UART_Transmit(&huart2, (uint8_t*)hex_buffer, strlen(hex_buffer), HAL_MAX_DELAY);
-  HAL_Delay(500);
+  Assign_SEN0290_I2C_Handler(&hi2c1);
+  Wait_SEN0290_Until_Ready();
+  ret_val = Register_Default_Command();
+
+
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
+  int i=0;
   while (1)
   {
-	  irq = Get_Interrupt_Source();
 
-	  HAL_UART_Transmit(&huart2, &irq, 1, HAL_MAX_DELAY);
-	  HAL_Delay(500);
+	  //strcpy((char *)buf, "Return Value:\r\n");
+//	  sprintf((char *)buf, "Return Value: %d\r\n", ret_val);
+//	  HAL_UART_Transmit(&huart2, buf, strlen((char *)buf), HAL_MAX_DELAY);
+//	  HAL_Delay(1000);
+
+//	  ret_val = Read_SEN0290_Distance_Register();
+//	  sprintf((char *)buf, "Distance Value: %d\r\n", ret_val);
+//	  HAL_UART_Transmit(&huart2, buf, strlen((char *)buf), HAL_MAX_DELAY);
+//	  HAL_Delay(1000);
+
+	  if (Blue_Button == 1)
+	  {
+		  HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, 1);
+		  HAL_Delay(100);
+
+		  sprintf((char *)buf, "Interrupt Rising: %d\r\n", i);
+		  HAL_UART_Transmit(&huart2, buf, strlen((char *)buf), HAL_MAX_DELAY);
+		  HAL_Delay(100);
+
+		  ret_val = Read_SEN0290_Interrupt_Source();
+		  sprintf((char *)buf, "Interrupt Source: %d\r\n", ret_val);
+		  HAL_UART_Transmit(&huart2, buf, strlen((char *)buf), HAL_MAX_DELAY);
+		  HAL_Delay(100);
+
+		  Interpret_SEN0290_Interrupt(ret_val);
+
+		  ret_val = Read_SEN0290_Distance_Register();
+		  sprintf((char *)buf, "Lightning Distance: %d kilometers\r\n", ret_val);
+		  HAL_UART_Transmit(&huart2, buf, strlen((char *)buf), HAL_MAX_DELAY);
+		  HAL_Delay(100);
+
+		  HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, 0);
+		  Blue_Button =0;
+		  i++;
+	  }
+
+
+
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -264,6 +294,12 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(B1_GPIO_Port, &GPIO_InitStruct);
 
+  /*Configure GPIO pins : PA0 PA8 */
+  GPIO_InitStruct.Pin = GPIO_PIN_0|GPIO_PIN_8;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+
   /*Configure GPIO pin : LD2_Pin */
   GPIO_InitStruct.Pin = LD2_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
@@ -271,11 +307,36 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(LD2_GPIO_Port, &GPIO_InitStruct);
 
+  /* EXTI interrupt init*/
+  HAL_NVIC_SetPriority(EXTI0_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(EXTI0_IRQn);
+
+  HAL_NVIC_SetPriority(EXTI9_5_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(EXTI9_5_IRQn);
+
+  HAL_NVIC_SetPriority(EXTI15_10_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(EXTI15_10_IRQn);
+
 /* USER CODE BEGIN MX_GPIO_Init_2 */
 /* USER CODE END MX_GPIO_Init_2 */
 }
 
 /* USER CODE BEGIN 4 */
+
+
+void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
+{
+  if(GPIO_Pin == GPIO_PIN_13)
+  {
+	  Blue_Button = 1;
+  }
+  else if(GPIO_Pin == GPIO_PIN_0)
+  {
+	  Blue_Button = 1;
+  }
+}
+
+
 
 /* USER CODE END 4 */
 
