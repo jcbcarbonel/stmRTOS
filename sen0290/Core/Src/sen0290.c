@@ -3,6 +3,14 @@
  *
  *  Created on: Aug 27, 2025
  *      Author: John Carlo Carbonel
+ *      Steps on DFROBOT Library
+ *      1. Reset by writing Preset_Default = 0x3C with 0x96
+ *      2. Manual calibration
+ *      	a. Set outdoors/indoor location of sensor
+ *      	b. Enable or disable disturber
+ *      	c. Set interrupt source
+ *      	d. Set capacitance
+ *      	e. Print Calibration complete
  */
 
 #include "SEN0290.h"
