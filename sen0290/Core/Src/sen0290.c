@@ -1,50 +1,96 @@
 /*
- * sen0290.c
+ * SEN0290.c
  *
- *  Created on: Aug 19, 2025
- *      Author: My PC
+ *  Created on: Aug 27, 2025
+ *      Author: John Carlo Carbonel
+ *      Steps on DFROBOT Library
+ *      1. Reset by writing Preset_Default = 0x3C with 0x96
+ *      2. Manual calibration
+ *      	a. Set outdoors/indoor location of sensor
+ *      	b. Enable or disable disturber
+ *      	c. Set interrupt source
+ *      	d. Set capacitance
+ *      	e. Print Calibration complete
  */
 
+#include "SEN0290.h"
 
-#include "sen0290.h"
+extern SEN0290_t SEN0290;
 
-
-//volatile int8_t AS3935IsrTrig = 0;
-
-extern sen0290_t sen0290;
-
-
-
-void Wait_sen0290_Until_Ready(void){
-	HAL_I2C_IsDeviceReady(sen0290.i2c_Handle, Device_Address, 3, HAL_MAX_DELAY);
+void Assign_SEN0290_I2C_Handler(I2C_HandleTypeDef *hi2c)
+{
+	SEN0290.I2C_Handle = hi2c;
 }
 
-uint8_t Register_Default_Command(void){
-	sen0290.Direct_Command = 0x96;
-	HAL_I2C_Mem_Write(sen0290.i2c_Handle, Device_Address, Preset_Default, sizeof(Preset_Default), &sen0290.Direct_Command,  sizeof(sen0290.Direct_Command), HAL_MAX_DELAY);
-	HAL_I2C_Mem_Write(sen0290.i2c_Handle, Device_Address, Calib_RCO, sizeof(Calib_RCO), &sen0290.Direct_Command,  sizeof(sen0290.Direct_Command), HAL_MAX_DELAY);
-
-	HAL_I2C_Mem_Read(sen0290.i2c_Handle, Device_Address, Preset_Default, sizeof(Preset_Default), &sen0290.Memory_Value, 16, HAL_MAX_DELAY);
-	//uint8_t mem_add = (sen0290.Memory_Value[0]<<8) + sen0290.Memory_Value[1];
-	uint16_t mem_add = sen0290.Memory_Value;
+void Assign_SEN0290_UART_Handler(UART_HandleTypeDef *hUART)
+{
+	SEN0290.UART_Handle = hUART;
 }
 
-uint8_t Get_Interrupt_Source(void){
-	HAL_I2C_Mem_Read(sen0290.i2c_Handle, Device_Address, Interrupt_Address, sizeof(Interrupt_Address), sen0290.Interrupt_Source, sizeof(sen0290.Interrupt_Source), HAL_MAX_DELAY);
+uint8_t Wait_SEN0290_Until_Ready(void)
+{
+	HAL_StatusTypeDef ret = HAL_I2C_IsDeviceReady(SEN0290.I2C_Handle, Device_Address, 3, HAL_MAX_DELAY);
 
-	if(0x08 == *sen0290.Interrupt_Source){
-	    return 1;                    // lightning caused interrupt
-	}
+    if (ret == HAL_OK)
+    {
+    	return 8;
+    }
+    return 0;
+}
 
-	else if(0x04 == *sen0290.Interrupt_Source){
-	    return 2;                    // disturber detected
+uint8_t Register_Default_Command(void)
+{
+	uint8_t Direct_Command = 0x96;
+	HAL_I2C_Mem_Write(SEN0290.I2C_Handle, Device_Address, Preset_Default, 1, &Direct_Command, 1, HAL_MAX_DELAY);
+
+	HAL_StatusTypeDef ret = HAL_I2C_Mem_Write(SEN0290.I2C_Handle, Device_Address, Calib_RCO, 1, &Direct_Command, 1, HAL_MAX_DELAY);
+
+	if (ret == HAL_OK)
+	{
+		return 9;
 	}
-	else if(0x01 == *sen0290.Interrupt_Source){
-	    return 3;                    // Noise level too high
-	}
-	else{
-	    return 5;
-	}                    // interrupt result not expected
+	 return 0;
 }
 
 
+uint8_t Read_SEN0290_Distance_Register(void)
+{
+	HAL_I2C_Mem_Read(SEN0290.I2C_Handle, Device_Address, SEN0290_Distance_Register, 1, &SEN0290.SEN0290_Distance_Value, 1, HAL_MAX_DELAY);
+	return SEN0290.SEN0290_Distance_Value;
+}
+
+uint8_t Read_SEN0290_Interrupt_Source(void)
+{
+	HAL_I2C_Mem_Read(SEN0290.I2C_Handle, Device_Address, Interrupt_Source, 1, &SEN0290.SEN0290_Distance_Value, 1, HAL_MAX_DELAY);
+	return SEN0290.SEN0290_Distance_Value;
+}
+
+uint8_t Interpret_SEN0290_Interrupt(void)
+{
+	uint8_t irq;
+	irq = Read_SEN0290_Interrupt_Source();
+	sprintf((char *)SEN0290.Interrupt_Message, "Interrupt Source: %d\r\n", irq);
+	HAL_UART_Transmit(SEN0290.UART_Handle, SEN0290.Interrupt_Message, strlen((char *)SEN0290.Interrupt_Message), HAL_MAX_DELAY);
+	HAL_Delay(100);
+	if (irq == 1)
+	{
+		sprintf((char *)SEN0290.Interrupt_Message, "Noise level too high!\r\n");
+		HAL_UART_Transmit(SEN0290.UART_Handle, SEN0290.Interrupt_Message, strlen((char *)SEN0290.Interrupt_Message), HAL_MAX_DELAY);
+		HAL_Delay(100);
+	}
+	else if (irq == 4)
+	{
+		sprintf((char *)SEN0290.Interrupt_Message, "Disturber detected!\r\n");
+		HAL_UART_Transmit(SEN0290.UART_Handle, SEN0290.Interrupt_Message, strlen((char *)SEN0290.Interrupt_Message), HAL_MAX_DELAY);
+		HAL_Delay(100);
+	}
+	else if (irq == 8)
+	{
+		sprintf((char *)SEN0290.Interrupt_Message, "Lightning Interrupt!\r\n");
+		HAL_UART_Transmit(SEN0290.UART_Handle, SEN0290.Interrupt_Message, strlen((char *)SEN0290.Interrupt_Message), HAL_MAX_DELAY);
+		HAL_Delay(100);
+	}
+
+
+	return 0;
+}
